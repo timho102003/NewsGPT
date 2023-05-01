@@ -5,8 +5,8 @@ import feedparser
 import nltk
 from newspaper import Article, Config
 from pygooglenews import GoogleNews
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+# from selenium import webdriver
+# from selenium.webdriver.chrome.options import Options
 
 nltk.download("punkt")
 
