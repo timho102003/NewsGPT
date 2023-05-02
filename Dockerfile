@@ -1,7 +1,6 @@
-FROM python:3.8.16 as base
+FROM python:3.8-slim as base
 
 RUN adduser --disabled-password pynecone
-
 
 FROM base as build
 
@@ -12,9 +11,10 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 COPY . .
 
+RUN apt-get update && apt-get install -y gcc python3-dev
+
 RUN pip install wheel \
     && pip install -r requirements.txt
-
 
 FROM base as runtime
 
@@ -28,14 +28,19 @@ RUN apt-get update && apt-get install -y \
 
 ENV PATH="/app/venv/bin:$PATH"
 
-
 FROM runtime as init
 
 WORKDIR /app
 ENV BUN_INSTALL="/app/.bun"
 COPY --from=build /app/ /app/
-RUN pc init
 
+RUN pc init 
+
+RUN bash -c "/app/.bun/bin/bun install --cwd .web/"
+
+RUN echo "export BUN_INSTALL=$BUN_INSTALL" >> ~/.bashrc
+
+RUN echo "The bun installation is located in: $(which bun)"
 
 FROM runtime
 
