@@ -1,0 +1,12 @@
+version: "3"
+
+services:
+  pynecone-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - 8000:8000
+      - 3000:3000
+    entrypoint: ["pc", "run"]
+    command: ["--env", "prod",]
