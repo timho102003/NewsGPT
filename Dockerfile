@@ -17,7 +17,6 @@ RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY .web/package.json ./
-WORKDIR /app/.web
 RUN npm install
 
 COPY . .
@@ -26,5 +25,6 @@ RUN pc init
 
 EXPOSE 3000
 EXPOSE 8000
+
 ENTRYPOINT [ "pc", "run" ]
 CMD ["--env", "prod"]
