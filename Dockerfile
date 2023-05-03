@@ -13,3 +13,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # RUN pc init .
 
 COPY . .
+
+
+EXPOSE 3000
+EXPOSE 8000
+ENTRYPOINT [ "pc", "run" ]
+CMD ["--env", "prod"]
