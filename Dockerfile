@@ -4,7 +4,7 @@ RUN apt-get update && \
     curl -sL https://deb.nodesource.com/setup_14.x | bash - && \
     apt-get install -y nodejs && \
     curl -fsSL https://bun.sh/install | bash && \
-    npm install -g next
+    npm install -g react react-dom next 
 
 ENV PYTHONUNBUFFERED 1
 COPY requirements.txt .
@@ -16,7 +16,7 @@ COPY . .
 RUN pc init
 
 
-EXPOSE 3000
-EXPOSE 8000
-ENTRYPOINT [ "pc", "run" ]
-CMD ["--env", "prod"]
+# EXPOSE 3000
+# EXPOSE 8000
+# ENTRYPOINT [ "pc", "run" ]
+# CMD ["--env", "prod"]
