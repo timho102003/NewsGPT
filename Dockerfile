@@ -15,7 +15,7 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY .web/package.json ./
+COPY package.json ./
 RUN npm install
 
 COPY . .
