@@ -10,9 +10,9 @@ COPY requirements.txt .
 
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
-# RUN pc init .
-
 COPY . .
+
+RUN pc init
 
 
 EXPOSE 3000
