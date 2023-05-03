@@ -27,7 +27,7 @@ def navbar(State):
         pc.hstack(
             pc.link(
                 pc.heading("NewsGPT", font_size="1.75em",
-                           on_click=State.clear_history),
+                           on_click=State.clear_all_history),
                 href="/",
             ),
             pc.spacer(),
@@ -44,7 +44,7 @@ def navbar(State):
                     bg="lightgreen",
                     color="black",
                     is_active=True,
-                    on_click=[State.search_process,
+                    on_click=[State.initial_search, State.search_process,
                               State.search, State.search_process],
                     size="sm",
                     border_radius="1em",
@@ -109,7 +109,7 @@ def navbar(State):
                                 bg="lightgreen",
                                 color="black",
                                 is_active=True,
-                                on_click=[State.on_check_apikey, State.clear_history],
+                                on_click=[State.on_check_apikey, State.clear_all_history],
                                 size="sm",
                                 border_radius="1em",
                                 variant="outline",

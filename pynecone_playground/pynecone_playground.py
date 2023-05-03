@@ -183,7 +183,7 @@ class State(pc.State):
         self.titles = []
         self._src_metadatas = []
 
-    def clear_history(self):
+    def clear_all_history(self):
         self.text = ""
         self.search_text = ""
         self.summary_text = ""
