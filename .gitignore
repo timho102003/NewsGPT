@@ -1,4 +1,4 @@
-# .web
+.web
 pynecone.db
 **/__pycache__
 **/.DS_Store
