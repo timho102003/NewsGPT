@@ -4,7 +4,6 @@ RUN apt-get update && \
     apt-get install -y curl && \
     curl -sL https://deb.nodesource.com/setup_14.x | bash - && \
     apt-get install -y nodejs && \
-    curl -fsSL https://bun.sh/install | bash && \
     npm install -g next
 
 ENV PYTHONUNBUFFERED 1
@@ -16,8 +15,8 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY .web/package.json ./
-RUN npm install
+# COPY .web/package.json ./
+# RUN npm install
 
 COPY . .
 

@@ -2,4 +2,4 @@ feedparser==5.2.1
 pygooglenews
 newspaper3k
 nltk
-pynecone
+pynecone==0.1.28
