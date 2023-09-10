@@ -1,8 +1,9 @@
+import asyncio
 import streamlit as st
 from streamlit_extras.row import row
 
 from config import FEED_ARTICLE_NUMS, NEWS_CATEGORIES
-from utils import generate_feed_layout, load_cat_feed, load_feeds, load_search_feed
+from utils import generate_feed_layout, load_cat_feed, load_feeds, load_search_feed, load_feeds_merge
 
 
 def feed_template():
@@ -11,6 +12,7 @@ def feed_template():
         unsafe_allow_html=True,
     )
     st.session_state.feed_dayrange = 3
+    # st.session_state.cat_selection = ["Feed"]
     _, search_col, _ = st.columns([0.25, 0.5, 0.25])
     with search_col:
         with st.form("Search Form", clear_on_submit=True):
@@ -33,16 +35,19 @@ def feed_template():
         cat_selection = st.multiselect(
             label="News Categories",
             options=["Feed"] + NEWS_CATEGORIES,
-            max_selections=1,
+            max_selections=1
         )
 
     if search_submit:
         cat_selection = ["search"]
 
     if not cat_selection or cat_selection[0] == "Feed":
-        load_feeds(
-            total_articles=FEED_ARTICLE_NUMS, data_range=st.session_state.feed_dayrange
+        asyncio.run(
+            load_feeds_merge(total_articles=FEED_ARTICLE_NUMS, data_range=st.session_state.feed_dayrange)
         )
+        # load_feeds(
+        #     total_articles=FEED_ARTICLE_NUMS, data_range=st.session_state.feed_dayrange
+        # )
         generate_feed_layout()
     elif cat_selection[0] == "World":
         load_cat_feed(

@@ -58,7 +58,7 @@ def chat_template():
                     text-align: center;
                     font-size: 200%;
                     font-weight: bold;
-                    color: white;
+                    color: black;
                     margin-bottom: 10px;
                     padding: 10px;
                     border-radius: 10px;
@@ -186,11 +186,15 @@ def chat_template():
         ):
             with st.spinner("Thinking..."):
                 # response = st.session_state["chat_engine"].chat(prompt)
-                response = st.session_state["chat_engine"].query(prompt)
-                st.write(response.response)
-                message = {"role": "assistant", "content": response.response}
+                try:
+                    response = st.session_state["chat_engine"].query(prompt)
+                    response = response.response
+                except:
+                    response = "Unable to retrieve the result due to some unexpected reason."
+                st.write(response)
+                message = {"role": "assistant", "content": response}
                 st.session_state.reading_time += readtime.of_text(
-                    response.response
+                    response
                 ).seconds
                 st.session_state.messages.append(
                     message
@@ -202,19 +206,20 @@ def chat_template():
         vertical_align="center",
         gap="medium",
     )
-    for _ in range(3):
-        predefine_prompt_row.write("")
-    predefine_prompt_row.button(
-        "Similar Viewpoints",
-        on_click=predefine_prompt,
-        kwargs={
-            "prompt": "Compare between the articles and provide the similar viewpoints in bullet points"
-        },
-    )
-    predefine_prompt_row.button(
-        "Discrepency Viewpoints",
-        on_click=predefine_prompt,
-        kwargs={
-            "prompt": "Compare between the articles and provide the discrepency viewpoints in bullet points"
-        },
-    )
+    if len(reference) > 1:
+        for _ in range(3):
+            predefine_prompt_row.write("")
+        predefine_prompt_row.button(
+            "Similar Viewpoints",
+            on_click=predefine_prompt,
+            kwargs={
+                "prompt": "Compare between the articles and provide the similar viewpoints in bullet points"
+            },
+        )
+        predefine_prompt_row.button(
+            "Discrepency Viewpoints",
+            on_click=predefine_prompt,
+            kwargs={
+                "prompt": "Compare between the articles and provide the discrepency viewpoints in bullet points"
+            },
+        )
