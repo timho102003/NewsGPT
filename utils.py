@@ -25,7 +25,6 @@ from streamlit_extras.switch_page_button import switch_page
 
 from config import NEWS_CATEGORIES
 
-
 def hash_text(text: str):
     hash_object = hashlib.sha256(text.encode())
     return hash_object.hexdigest()
@@ -155,8 +154,8 @@ def load_activities(activities):
 
 async def recommendation(key, positive, daterange, limit, thresh, negative=[]):
     if key in ["activities", "positive"]:
-        act_positive = [activity["id"] for activity in positive[-30:]]
-        act_negative = [activity["id"] for activity in negative[-30:]]
+        act_positive = [activity["id"] for activity in positive[-100:]]
+        act_negative = [activity["id"] for activity in negative[-100:]]
         data = {
             "p": act_positive,
             "n": act_negative,
@@ -207,7 +206,7 @@ async def load_feeds_merge(total_articles=12, data_range=14, num_query_per_cat=1
             #     states += ["positive"]
         tasks = []
         start = time.time()
-        print(states)
+
         st.write("Searching for suitable news ...")
         for state in states:
             if state == "activities":
@@ -222,7 +221,7 @@ async def load_feeds_merge(total_articles=12, data_range=14, num_query_per_cat=1
                                         limit=num_query_per_cat, 
                                         thresh=thresh, 
                                         negative=negative))
-        print("Run Recommendation: {}".format(time.time()-start))
+        # print("Run Recommendation: {}".format(time.time()-start))
         start = time.time()
         responses = await asyncio.gather(*tasks)
         tmp_articles = []
@@ -233,7 +232,7 @@ async def load_feeds_merge(total_articles=12, data_range=14, num_query_per_cat=1
                 tmp_articles.extend(articles)
             else:
                 print(response.text)
-        print("Unpack: {}".format(time.time()-start))
+        # print("Unpack: {}".format(time.time()-start))
         
         final_articles, unique_id = list(), set()
         start = time.time()
@@ -252,9 +251,9 @@ async def load_feeds_merge(total_articles=12, data_range=14, num_query_per_cat=1
                 unique_id.add(cur_id)
                 final_articles.append(art)
         st.session_state["recommend"].extend(
-            random.sample(final_articles, min(len(final_articles), total_articles))
+            final_articles#random.sample(final_articles, min(len(final_articles), total_articles))
         )
-        print("Reorganize: {}".format(time.time() - start))
+        # print("Reorganize: {}".format(time.time() - start))
         status.update(label="Recommendation Complete!", state="complete", expanded=False)
 
 def load_feeds(total_articles=12, data_range=14, num_query_per_cat=10, thresh=0.1):
@@ -264,7 +263,7 @@ def load_feeds(total_articles=12, data_range=14, num_query_per_cat=10, thresh=0.
         start = time.time()
         user_meta = st.session_state["user_ref"].get()
         user_meta = user_meta.to_dict()
-        print("retrieve data from firestore: {}".format(time.time()-start))
+        # print("retrieve data from firestore: {}".format(time.time()-start))
         st.session_state["user_favorite"] = user_meta["favorite"]
         if not st.session_state["user_favorite"]:
             st.session_state["user_favorite"] = NEWS_CATEGORIES
@@ -297,18 +296,18 @@ def load_feeds(total_articles=12, data_range=14, num_query_per_cat=10, thresh=0.
                     st.session_state[
                         "error"
                     ] = f"load_feeds, qdrant scroll error: {response.text}"
-                    print(response)
-                    print(response.text)
-                    print(response.json)
+                    # print(response)
+                    # print(response.text)
+                    # print(response.json)
                     # print(merged_headers)
                     return
                 response = response.json()
                 articles = response["result"]["articles"]
                 tmp_articles.extend(articles)
-            print("retrieve all fav data from qdrant: {}".format(time.time()-start))
+            # print("retrieve all fav data from qdrant: {}".format(time.time()-start))
 
         elif numPos >= 30:
-            print("recommend through positive")
+            # print("recommend through positive")
             act_positive = [activity["id"] for activity in positive[-30:]]
             act_negative = [activity["id"] for activity in negative[-30:]]
             data = {
@@ -333,7 +332,7 @@ def load_feeds(total_articles=12, data_range=14, num_query_per_cat=10, thresh=0.
             tmp_articles.extend(articles)
 
         elif numAct >= 30:
-            print("recommend through activities")
+            # print("recommend through activities")
             act_positive = [activity["id"] for activity in activities[-30:]]
             act_negative = [activity["id"] for activity in negative[-30:]]
             data = {
@@ -374,9 +373,9 @@ def load_feeds(total_articles=12, data_range=14, num_query_per_cat=10, thresh=0.
                 unique_id.add(cur_id)
                 final_articles.append(art)
         st.session_state["recommend"].extend(
-            random.sample(final_articles, min(len(final_articles), total_articles))
+            final_articles#random.sample(final_articles, min(len(final_articles), total_articles))
         )
-        print("Reorganize: {}".format(time.time()-start))
+        # print("Reorganize: {}".format(time.time()-start))
 
 
 def load_search_feed(search_msg, total_articles=20, data_range=14):
@@ -406,7 +405,7 @@ def load_search_feed(search_msg, total_articles=20, data_range=14):
                 unique_id.add(cur_id)
                 final_articles.append(art)
         st.session_state["recommend"].extend(
-            random.sample(final_articles, min(len(final_articles), total_articles))
+            final_articles#random.sample(final_articles, min(len(final_articles), total_articles))
         )
 
 
@@ -436,7 +435,7 @@ def load_cat_feed(category="World", total_articles=12, data_range=14):
                 unique_id.add(cur_id)
                 final_articles.append(art)
         st.session_state["recommend"].extend(
-            random.sample(final_articles, min(len(final_articles), total_articles))
+            final_articles#random.sample(final_articles, min(len(final_articles), total_articles))
         )
 
 
@@ -506,7 +505,7 @@ def generate_feed_layout():
                 },
             )
 
-    print("generate_feed_layout: {}".format(time.time() - start))
+    # print("generate_feed_layout: {}".format(time.time() - start))
 
 
 def update_activities(
@@ -829,7 +828,7 @@ def run_chat(payload, query_embed, ori_article_id, compare_num=5):
 
     center_running()  # st.spinner("Start Summarize, please wait patient for 30 secs"):
 
-    params = {"q": "", "l": compare_num, "t": 0.9}
+    params = {"q": "", "l": compare_num, "t": 0.8}
 
     data = {
         "e": query_embed,
@@ -844,7 +843,7 @@ def run_chat(payload, query_embed, ori_article_id, compare_num=5):
         params=params,
         data=data,
     )  # , headers=headers)
-    print("retrieve data from qdrant (in run chat): {}".format(time.time()-start))
+    # print("retrieve data from qdrant (in run chat): {}".format(time.time()-start))
     if response.status_code != 200:
         st.session_state["page_name"] = "feed"
         st.session_state["error"] = f"run_summary, qdrant search error: {response.text}"
@@ -852,10 +851,13 @@ def run_chat(payload, query_embed, ori_article_id, compare_num=5):
     recommendation = response.json()
     documents, reference, rt, ner_p, ner_l, ner_o = [], [], [], set(), set(), set()
 
-    #TODO Add original Title and content
+    if len(recommendation["result"]["articles"]) == 0:
+        recommendation["result"]["articles"].append({"payload": payload})
 
+    check_overlap = set()
     for rec in recommendation["result"]["articles"]:
-        if rec["payload"]["body"]:
+        if rec["payload"]["body"] and rec["payload"]["id"] not in check_overlap:
+            check_overlap.add(rec["payload"]["id"])
             cur_doc = (
                 f'title: {rec["payload"]["title"]}, body: {rec["payload"]["body"]}'
             )
@@ -899,8 +901,9 @@ def run_chat(payload, query_embed, ori_article_id, compare_num=5):
     st.session_state["chat_engine"] = RetrieverQueryEngine(
         retriever=retriever,
         response_synthesizer=st.session_state["response_synthesizer"],
+
     )
-    print("Prepare summary index: {}".format(time.time()-start))
+    # print("Prepare summary index: {}".format(time.time()-start))
 
     # st.session_state["cur_news_index"] = VectorStoreIndex.from_documents(documents, service_context=st.session_state["service_context"])
     # st.session_state["chat_engine"] = st.session_state["cur_news_index"].as_chat_engine(chat_mode="condense_question", verbose=True)
