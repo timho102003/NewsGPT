@@ -41,7 +41,7 @@ def feed_template():
         st.session_state.cat_selection = "search"
 
     if st.session_state.get("cat_selection", "Feed") == "Feed":
-        st.session_state.recommend = fetch_feeds(total_articles=FEED_ARTICLE_NUMS, data_range=st.session_state.feed_dayrange)
+        st.session_state.recommend = fetch_feeds(total_articles=FEED_ARTICLE_NUMS, data_range=st.session_state.feed_dayrange, thresh=0.5)
     elif st.session_state.get("cat_selection", "Feed") == "search":
         st.session_state.recommend = fetch_feeds(total_articles=FEED_ARTICLE_NUMS, 
                                                  data_range=st.session_state.feed_dayrange, 
