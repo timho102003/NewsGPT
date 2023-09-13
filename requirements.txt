@@ -9,3 +9,4 @@ streamlit==1.26.0
 streamlit_extras==0.3.1
 toml==0.10.2
 nltk==3.8.1
+st-btn-select
