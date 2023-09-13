@@ -1,12 +1,20 @@
 import asyncio
 import streamlit as st
 from streamlit_extras.row import row
+from st_btn_select import st_btn_select
 
 from config import FEED_ARTICLE_NUMS, NEWS_CATEGORIES
 from utils import generate_feed_layout, fetch_feeds
 
 
 def feed_template():
+    _, cat_col, _ = st.columns([0.19, 0.65, 0.175])
+    selections = ["Feed"] + NEWS_CATEGORIES
+    with cat_col:
+        st.session_state.cat_selection = st_btn_select(selections, 
+                                                       index=selections.index(st.session_state.get("cat_selection", "Feed")) \
+                                                        if st.session_state.get("cat_selection", "Feed") != "search" else 0, 
+                                                       nav=False)
     st.markdown(
         f"<h3 style='text-align:center;padding: 0px 0px;color:grey;font-size:200%;'>{st.session_state['realname']} Feed</h3><br>",
         unsafe_allow_html=True,
@@ -31,24 +39,19 @@ def feed_template():
             help="Choose articles from the last n days up to today.",
             key="feed_dayrange",
         )
-        st.session_state.cat_selection = st.multiselect(
-            label="News Categories",
-            options=["Feed"] + NEWS_CATEGORIES,
-            max_selections=1,
-            default=st.session_state.get("cat_selection", [])
-        )
+        # st.write(f'Selected option: {st.session_state.cat_selection}')
 
     if search_submit:
         st.session_state.cat_selection = ["search"]
 
-    if not st.session_state.cat_selection or st.session_state.cat_selection[0] == "Feed":
+    if st.session_state.cat_selection == "Feed":
         st.session_state.recommend = fetch_feeds(total_articles=FEED_ARTICLE_NUMS, data_range=st.session_state.feed_dayrange)
-    elif st.session_state.cat_selection[0] == "search":
+    elif st.session_state.cat_selection == "search":
         st.session_state.recommend = fetch_feeds(total_articles=FEED_ARTICLE_NUMS, 
                                                  data_range=st.session_state.feed_dayrange, 
-                                                 mode=st.session_state.cat_selection[0],
+                                                 mode=st.session_state.cat_selection,
                                                  search_msg=query_search,
                                                  thresh=0.2)
     else:
-        st.session_state.recommend = fetch_feeds(total_articles=FEED_ARTICLE_NUMS, data_range=st.session_state.feed_dayrange, mode=st.session_state.cat_selection[0])
+        st.session_state.recommend = fetch_feeds(total_articles=FEED_ARTICLE_NUMS, data_range=st.session_state.feed_dayrange, mode=st.session_state.cat_selection)
     generate_feed_layout()
