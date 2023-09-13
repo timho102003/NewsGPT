@@ -142,6 +142,8 @@ def load_activities(activities):
         + "-"
         + group_by_time["d"].astype(str)
     )
+    group_by_time['timestamp'] = pd.to_datetime(group_by_time['yyyy-mm-dd'])
+    group_by_time = group_by_time.sort_values(by='timestamp')
     group_by_cat = df[["category", "read cnt"]].groupby(["category"]).sum()
     group_by_cat = group_by_cat.reset_index()
     return group_by_time, group_by_cat
@@ -261,6 +263,7 @@ def fetch_feeds(total_articles=12, data_range=14, thresh=0.1, mode="feed", searc
         if cur_id not in unique_id:
             unique_id.add(cur_id)
             final_articles.append(art)
+    final_articles = sorted(final_articles, key=lambda x: x["payload"]['date'], reverse=True)
     return final_articles
 
 def generate_feed_layout():

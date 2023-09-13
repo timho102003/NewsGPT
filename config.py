@@ -6,4 +6,4 @@ NEWS_CATEGORIES = [
     "Entertainment",
     "Business",
 ]
-FEED_ARTICLE_NUMS = 20
+FEED_ARTICLE_NUMS = 30

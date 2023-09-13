@@ -58,7 +58,7 @@ with st.sidebar:
             st.divider()
             st.area_chart(
                 gb_time_df,
-                x="yyyy-mm-dd",
+                x="timestamp",
                 y="read cnt",
             )
             st.divider()
