@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 import random
+import pickle
 import time
 import asyncio
 from datetime import datetime
@@ -29,7 +30,6 @@ def hash_text(text: str):
     hash_object = hashlib.sha256(text.encode())
     return hash_object.hexdigest()
 
-
 def redirect_button(url: str, text: str = None, color="#FD504D"):
     st.markdown(
         f"""
@@ -48,7 +48,6 @@ def redirect_button(url: str, text: str = None, color="#FD504D"):
         unsafe_allow_html=True,
     )
 
-
 def check_is_sign_up(username=""):
     if not username:
         return False
@@ -61,7 +60,6 @@ def check_is_sign_up(username=""):
         return True
     else:
         return False
-
 
 def sign_up(username, password, lastname, firstname, favorite):
     signup_info = ""
@@ -91,7 +89,6 @@ def sign_up(username, password, lastname, firstname, favorite):
 
     return is_signup, signup_info
 
-
 def password_entered(username="", password=""):
     """Checks whether a password entered by the user is correct."""
 
@@ -120,7 +117,6 @@ def password_entered(username="", password=""):
         st.session_state["password_correct"] = False
         st.session_state["is_auth_user"] = False
 
-
 def signout():
     st.session_state["is_auth_user"] = False
     st.session_state["password_correct"] = False
@@ -128,7 +124,6 @@ def signout():
     st.session_state["realname"] = ""
     st.session_state["active_summary_result"] = {}
     st.session_state["page_name"] = "login"
-
 
 @st.cache_data
 def load_activities(activities):
@@ -151,8 +146,7 @@ def load_activities(activities):
     group_by_cat = group_by_cat.reset_index()
     return group_by_time, group_by_cat
 
-
-async def recommendation(key, positive, daterange, limit, thresh, negative=[]):
+def recommendation(key, positive, daterange, limit, thresh, negative=[], search_msg=""):
     if key in ["activities", "positive"]:
         act_positive = [activity["id"] for activity in positive[-100:]]
         act_negative = [activity["id"] for activity in negative[-100:]]
@@ -167,6 +161,19 @@ async def recommendation(key, positive, daterange, limit, thresh, negative=[]):
                         params=params,
                         data=data
                     )
+    elif key == "search":
+        params = {"q": search_msg, "l": limit, "t": thresh, "dr": daterange}
+
+        data = {
+            "e": [],
+        }
+        # Convert to JSON
+        data = json.dumps(data)
+        response = requests.post(
+            f"{os.environ['QDRANT_LAMBDA_ENTRYPOINT']}/api/v1/search",
+            params=params,
+            data=data,
+        )
     else:
         params = {
                     "c": key.lower(),
@@ -179,24 +186,24 @@ async def recommendation(key, positive, daterange, limit, thresh, negative=[]):
                     )
     return response
 
-# TODO: better recommendation system (mixing the activities, positive and negative)
-# TODO: Wrap the logics to the API
-async def load_feeds_merge(total_articles=12, data_range=14, num_query_per_cat=10, thresh=0.1):
+#TODO: Sort articles by the date
+@st.cache_data(ttl=300)
+def fetch_feeds(total_articles=12, data_range=14, thresh=0.1, mode="feed", search_msg=""):
     st.session_state["recommend"] = []
     _, col2, _ = st.columns([0.1, 0.8, 0.1])
-    with col2.status("Start Recommendation ...", expanded=True) as status:
-        if not st.session_state["password_correct"]:
-            st.session_state.page_name = "login"
-
-        # Get User Metadata
+    if not st.session_state["password_correct"]:
+        st.session_state.page_name = "login"
+    states = []
+    negative = []
+    # Get User Metadata
+    if mode.lower() == "feed":
         user_meta = st.session_state["user_ref"].get()
         user_meta = user_meta.to_dict()
         st.session_state["user_favorite"] = user_meta["favorite"]    
         
         positive, negative, activities = user_meta.get("positive", []), user_meta.get("negative", []), user_meta.get("activities", [])
         numAct, numPos, numNeg = len(activities), len(positive), len(negative)
-
-        states = []
+        
         if numAct < 10:
             states = st.session_state["user_favorite"]
         else:
@@ -204,240 +211,57 @@ async def load_feeds_merge(total_articles=12, data_range=14, num_query_per_cat=1
                 states += ["activities"]
             # if numPos:
             #     states += ["positive"]
-        tasks = []
-        start = time.time()
+    elif mode in NEWS_CATEGORIES:
+        states.append(mode.lower())
+    elif mode.lower() == "search":
+        states.append(mode.lower())
+    else:
+        raise Exception(f"Do not support the mode: {mode}, only support {', '.join(NEWS_CATEGORIES+['feed', 'search'])}")
 
-        st.write("Searching for suitable news ...")
-        for state in states:
-            if state == "activities":
-                pos = activities
-            elif state == "positive":
-                pos = positive
-            else:
-                pos = []
-            tasks.append(recommendation(key=state, 
-                                        positive=pos, 
-                                        daterange=data_range, 
-                                        limit=num_query_per_cat, 
-                                        thresh=thresh, 
-                                        negative=negative))
-        # print("Run Recommendation: {}".format(time.time()-start))
-        start = time.time()
-        responses = await asyncio.gather(*tasks)
-        tmp_articles = []
-        for response in responses:
-            if response.status_code == 200:
-                response = response.json()
-                articles = response["result"]["articles"]
-                tmp_articles.extend(articles)
-            else:
-                print(response.text)
-        # print("Unpack: {}".format(time.time()-start))
-        
-        final_articles, unique_id = list(), set()
-        start = time.time()
-        st.write("Unpacking results ...")
-        for art in tmp_articles:
-            if isinstance(art, str):
-                try:
-                    art = json.loads(art)
-                except Exception as e:
-                    st.toast(e)
-                    return
-            if art["payload"]["body"] == "" and art["payload"]["summary"] == "":
-                continue
-            cur_id = art["payload"]["id"]
-            if cur_id not in unique_id:
-                unique_id.add(cur_id)
-                final_articles.append(art)
-        st.session_state["recommend"].extend(
-            final_articles#random.sample(final_articles, min(len(final_articles), total_articles))
-        )
-        # print("Reorganize: {}".format(time.time() - start))
-        status.update(label="Recommendation Complete!", state="complete", expanded=False)
-
-def load_feeds(total_articles=12, data_range=14, num_query_per_cat=10, thresh=0.1):
-    # Login user, not guest
-    st.session_state["recommend"] = []
-    if st.session_state["password_correct"]:
-        start = time.time()
-        user_meta = st.session_state["user_ref"].get()
-        user_meta = user_meta.to_dict()
-        # print("retrieve data from firestore: {}".format(time.time()-start))
-        st.session_state["user_favorite"] = user_meta["favorite"]
-        if not st.session_state["user_favorite"]:
-            st.session_state["user_favorite"] = NEWS_CATEGORIES
-        positive = user_meta.get("positive", [])
-        negative = user_meta.get("negative", [])
-        activities = user_meta.get("activities", [])
-        numAct = len(activities)
-        numPos = len(positive)
-        tmp_articles = []
-        # per_article_count = total_articles // len(st.session_state["user_favorite"])
-        if (not positive and not activities) or (numPos < 30 and numAct < 30):
-            # TODO: Parse all the favorite category all at once
-            start = time.time()
-            for fav in st.session_state["user_favorite"]:
-                params = {
-                    "c": fav.lower(),
-                    "dr": int(data_range),
-                    "l": int(num_query_per_cat),
-                }
-
-                response = requests.get(
-                    f"{os.environ['QDRANT_LAMBDA_ENTRYPOINT']}/api/v1/scroll",
-                    params=params,
-                )
-
-                # # Make the GET request
-                # response = requests.get(url, params=params)
-                if response.status_code != 200:
-                    st.session_state["page_name"] = "feed"
-                    st.session_state[
-                        "error"
-                    ] = f"load_feeds, qdrant scroll error: {response.text}"
-                    # print(response)
-                    # print(response.text)
-                    # print(response.json)
-                    # print(merged_headers)
-                    return
-                response = response.json()
-                articles = response["result"]["articles"]
-                tmp_articles.extend(articles)
-            # print("retrieve all fav data from qdrant: {}".format(time.time()-start))
-
-        elif numPos >= 30:
-            # print("recommend through positive")
-            act_positive = [activity["id"] for activity in positive[-30:]]
-            act_negative = [activity["id"] for activity in negative[-30:]]
-            data = {
-                "p": act_positive,
-                "n": act_negative,
-            }
-            params = {"dr": data_range, "l": int(total_articles * 1.5), "t": thresh}
-            data = json.dumps(data)
-            response = requests.post(
-                f"{os.environ['QDRANT_LAMBDA_ENTRYPOINT']}/api/v1/recommend",
-                params=params,
-                data=data,
-            )  # , headers=headers)
-            if response.status_code != 200:
-                st.session_state["page_name"] = "feed"
-                st.session_state[
-                    "error"
-                ] = f"load_feeds, qdrant recommend error: {response.text}"
-                return
+    tasks = []
+    for state in states:
+        if state == "activities":
+            pos = activities
+        elif state == "positive":
+            pos = positive
+        else:
+            pos = []
+        tasks.append(recommendation(key=state, 
+                                    positive=pos, 
+                                    daterange=data_range, 
+                                    limit=total_articles, 
+                                    thresh=thresh, 
+                                    negative=negative,
+                                    search_msg=search_msg if state == "search" else ""))
+    # print("Run Recommendation: {}".format(time.time()-start))
+    start = time.time()
+    responses = tasks#await asyncio.gather(*tasks)
+    tmp_articles = []
+    for response in responses:
+        if response.status_code == 200:
             response = response.json()
             articles = response["result"]["articles"]
             tmp_articles.extend(articles)
-
-        elif numAct >= 30:
-            # print("recommend through activities")
-            act_positive = [activity["id"] for activity in activities[-30:]]
-            act_negative = [activity["id"] for activity in negative[-30:]]
-            data = {
-                "p": act_positive,
-                "n": act_negative,
-            }
-            params = {"dr": data_range, "l": int(total_articles * 1.5), "t": thresh}
-
-            data = json.dumps(data)
-            response = requests.post(
-                f"{os.environ['QDRANT_LAMBDA_ENTRYPOINT']}/api/v1/recommend",
-                params=params,
-                data=data,
-            )  # , headers=headers)
-            if response.status_code != 200:
-                st.session_state["page_name"] = "feed"
-                st.session_state[
-                    "error"
-                ] = f"load_feeds, qdrant recommend error: {response.text}"
+        else:
+            print(response.text)
+    # print("Unpack: {}".format(time.time()-start))
+    
+    final_articles, unique_id = list(), set()
+    start = time.time()
+    for art in tmp_articles:
+        if isinstance(art, str):
+            try:
+                art = json.loads(art)
+            except Exception as e:
+                st.toast(e)
                 return
-            response = response.json()
-            articles = response["result"]["articles"]
-            tmp_articles.extend(articles)
-
-        final_articles, unique_id = list(), set()
-        start = time.time()
-        for art in tmp_articles:
-            if isinstance(art, str):
-                try:
-                    art = json.loads(art)
-                except Exception as e:
-                    st.toast(e)
-                    return
-            if art["payload"]["body"] == "" and art["payload"]["summary"] == "":
-                continue
-            cur_id = art["payload"]["id"]
-            if cur_id not in unique_id:
-                unique_id.add(cur_id)
-                final_articles.append(art)
-        st.session_state["recommend"].extend(
-            final_articles#random.sample(final_articles, min(len(final_articles), total_articles))
-        )
-        # print("Reorganize: {}".format(time.time()-start))
-
-
-def load_search_feed(search_msg, total_articles=20, data_range=14):
-    st.session_state["recommend"] = []
-    q_article_count = int(total_articles * 1.5)
-    if st.session_state["password_correct"]:
-        params = {"q": search_msg, "l": q_article_count, "t": 0.3, "dr": data_range}
-
-        data = {
-            "e": [],
-        }
-        # Convert to JSON
-        data = json.dumps(data)
-        response = requests.post(
-            f"{os.environ['QDRANT_LAMBDA_ENTRYPOINT']}/api/v1/search",
-            params=params,
-            data=data,
-        )
-        response = response.json()
-        articles = response["result"]["articles"]
-        final_articles, unique_id = list(), set()
-        for art in articles:
-            if art["payload"]["body"] == "" and art["payload"]["summary"] == "":
-                continue
-            cur_id = art["payload"]["id"]
-            if cur_id not in unique_id:
-                unique_id.add(cur_id)
-                final_articles.append(art)
-        st.session_state["recommend"].extend(
-            final_articles#random.sample(final_articles, min(len(final_articles), total_articles))
-        )
-
-
-def load_cat_feed(category="World", total_articles=12, data_range=14):
-    st.session_state["recommend"] = []
-    q_article_count = int(total_articles * 1.5)
-    if st.session_state["password_correct"]:
-        params = {"c": category.lower(), "dr": data_range, "l": q_article_count}
-
-        response = requests.get(
-            f"{os.environ['QDRANT_LAMBDA_ENTRYPOINT']}/api/v1/scroll", params=params
-        )  # , headers=headers)
-        if response.status_code != 200:
-            st.session_state["page_name"] = "feed"
-            st.session_state[
-                "error"
-            ] = f"load_cat_feed, qdrant scroll error: {response.text}"
-            return
-        response = response.json()
-        articles = response["result"]["articles"]
-        final_articles, unique_id = list(), set()
-        for art in articles:
-            if art["payload"]["body"] == "" and art["payload"]["summary"] == "":
-                continue
-            cur_id = art["payload"]["id"]
-            if cur_id not in unique_id:
-                unique_id.add(cur_id)
-                final_articles.append(art)
-        st.session_state["recommend"].extend(
-            final_articles#random.sample(final_articles, min(len(final_articles), total_articles))
-        )
-
+        if art["payload"]["body"] == "" and art["payload"]["summary"] == "":
+            continue
+        cur_id = art["payload"]["id"]
+        if cur_id not in unique_id:
+            unique_id.add(cur_id)
+            final_articles.append(art)
+    return final_articles
 
 def generate_feed_layout():
     # Add CSS for rounded corners
@@ -507,7 +331,6 @@ def generate_feed_layout():
 
     # print("generate_feed_layout: {}".format(time.time() - start))
 
-
 def update_activities(
     title, id, category, summary_rt, ori_rt, ner_loc, ner_org, ner_per, chat_mode=False
 ):
@@ -547,7 +370,6 @@ def update_activities(
     else:
         st.session_state["user_ref"].update({"save_time": ArrayUnion([save_time])})
 
-
 def update_positives(title, id, category, ner_loc, ner_org, ner_per):
     new = {
         "title": hash_text(title),
@@ -568,7 +390,6 @@ def update_positives(title, id, category, ner_loc, ner_org, ner_per):
         st.session_state["user_ref"].set(cur_data, merge=True)
     else:
         st.session_state["user_ref"].update({"positive": ArrayUnion([new])})
-
 
 def update_negatives(title, id, category, ner_loc, ner_org, ner_per):
     new = {
@@ -591,7 +412,6 @@ def update_negatives(title, id, category, ner_loc, ner_org, ner_per):
     else:
         st.session_state["user_ref"].update({"negative": ArrayUnion([new])})
 
-
 def generate_anno_text(text_list, label, color="#8ef", border="1px dashed red"):
     annos = []
     for txt in text_list:
@@ -604,7 +424,6 @@ def generate_anno_text(text_list, label, color="#8ef", border="1px dashed red"):
             )
         )
     return annotated_text(*annos)
-
 
 def second_to_text(duration=0, simplify=False):
     minute = duration // 60
@@ -623,7 +442,6 @@ def second_to_text(duration=0, simplify=False):
             .replace("sec", "s")
         )
     return result if not result == "" else "0 secs"
-
 
 # TODO: Save article features
 # TODO: Handle the multiple click of thumbs up and down
@@ -814,7 +632,7 @@ def summary_layout_template(
                     st.markdown(f'{r_i}. [{ref["title"]}]({ref["url"]})')
             st.markdown("</div>", unsafe_allow_html=True)
 
-
+#TODO: Enhance the performance of retriever. Current retriever sometimes can't get the answer correctly (Change to other retriever)
 def run_chat(payload, query_embed, ori_article_id, compare_num=5):
     st.session_state.messages = [
         {"role": "assistant", "content": f"Ask me a question about {payload['title']}"}
