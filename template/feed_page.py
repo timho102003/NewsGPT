@@ -8,19 +8,13 @@ from utils import generate_feed_layout, fetch_feeds
 
 
 def feed_template():
-    _, cat_col, _ = st.columns([0.19, 0.65, 0.175])
-    selections = ["Feed"] + NEWS_CATEGORIES
-    with cat_col:
-        st.session_state.cat_selection = st_btn_select(selections, 
-                                                       index=selections.index(st.session_state.get("cat_selection", "Feed")) \
-                                                        if st.session_state.get("cat_selection", "Feed") != "search" else 0, 
-                                                       nav=False)
     st.markdown(
         f"<h3 style='text-align:center;padding: 0px 0px;color:grey;font-size:200%;'>{st.session_state['realname']} Feed</h3><br>",
         unsafe_allow_html=True,
     )
-    st.session_state.feed_dayrange = 3
     _, search_col, _ = st.columns([0.25, 0.5, 0.25])
+    selections = ["Feed"] + NEWS_CATEGORIES
+    st.session_state.feed_dayrange = 3
     with search_col:
         with st.form("Search Form", clear_on_submit=True):
             search_row = row(spec=[0.8, 0.2], vertical_align="bottom", gap="medium")
@@ -39,14 +33,18 @@ def feed_template():
             help="Choose articles from the last n days up to today.",
             key="feed_dayrange",
         )
-        # st.write(f'Selected option: {st.session_state.cat_selection}')
+        st.session_state.cat_selection = st.selectbox('Choose the news categories', 
+                              options=selections, 
+                              index=selections.index(st.session_state.get("cat_selection", "Feed")) \
+                                if st.session_state.get("cat_selection", "Feed") != "search" else 0)
+                # st.write(f'Selected option: {st.session_state.cat_selection}')
 
     if search_submit:
-        st.session_state.cat_selection = ["search"]
+        st.session_state.cat_selection = "search"
 
-    if st.session_state.cat_selection == "Feed":
+    if st.session_state.get("cat_selection", "Feed") == "Feed":
         st.session_state.recommend = fetch_feeds(total_articles=FEED_ARTICLE_NUMS, data_range=st.session_state.feed_dayrange)
-    elif st.session_state.cat_selection == "search":
+    elif st.session_state.get("cat_selection", "Feed") == "search":
         st.session_state.recommend = fetch_feeds(total_articles=FEED_ARTICLE_NUMS, 
                                                  data_range=st.session_state.feed_dayrange, 
                                                  mode=st.session_state.cat_selection,
