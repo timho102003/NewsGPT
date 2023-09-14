@@ -647,7 +647,7 @@ def run_chat(payload, query_embed, ori_article_id, compare_num=5):
 
     center_running()  # st.spinner("Start Summarize, please wait patient for 30 secs"):
 
-    params = {"q": "", "l": compare_num, "t": 0.8}
+    params = {"q": "", "l": compare_num, "t": 0.6}
 
     data = {
         "e": query_embed,
