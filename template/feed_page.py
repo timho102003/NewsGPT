@@ -12,7 +12,6 @@ def feed_template():
     )
     _, search_col, _ = st.columns([0.25, 0.5, 0.25])
     selections = ["Feed"] + NEWS_CATEGORIES
-    st.session_state.feed_dayrange = 3
     with search_col:
         with st.form("Search Form", clear_on_submit=True):
             search_row = row(spec=[0.8, 0.2], vertical_align="bottom", gap="medium")
@@ -25,7 +24,7 @@ def feed_template():
 
         st.number_input(
             "Day Range",
-            min_value=1,
+            min_value=5,
             max_value=30,
             step=1,
             help="Choose articles from the last n days up to today.",
@@ -47,7 +46,7 @@ def feed_template():
                                                  data_range=st.session_state.feed_dayrange, 
                                                  mode=st.session_state.cat_selection,
                                                  search_msg=query_search,
-                                                 thresh=0.2)
+                                                 thresh=0.4)
     else:
         st.session_state.recommend = fetch_feeds(total_articles=FEED_ARTICLE_NUMS, data_range=st.session_state.feed_dayrange, mode=st.session_state.cat_selection)
     generate_feed_layout()
