@@ -32,7 +32,7 @@ def login_template():
                 type="password",
             )
             submitted = st.form_submit_button("LOGIN", use_container_width=True)
-            if submitted:
+            if submitted and password and username:
                 password_entered(username=username, password=password)
                 if not st.session_state["password_correct"]:
                     st.error("😕 User not known or password incorrect")
@@ -45,6 +45,11 @@ def login_template():
                     sleep(1)
                     st.session_state["page_name"] = "feed"
                     switch_page("home")
+            elif submitted:
+                st.warning("Please enter the username and password before you click login buttom")
+                sleep(1.5)
+                st.session_state["page_name"] = "login"
+                switch_page("home")
         # google_signin = st.button("Sign In with Google", use_container_width=True)
         issignup = st.button("SIGN UP", type="secondary", use_container_width=True)
         if issignup:
