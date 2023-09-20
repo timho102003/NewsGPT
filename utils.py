@@ -640,7 +640,7 @@ def run_chat(payload, query_embed, ori_article_id, compare_num=5):
     ]
 
     st.session_state.initial_prompt = [
-        'Summarize the content details in the "5W1H" approach (Who, What, When, Where, Why, and How) in bullet points',
+        'Please summarize the articles for me',
     ]
 
     st.session_state.reading_time = 0

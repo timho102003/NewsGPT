@@ -12,8 +12,15 @@ from utils import (
 )
 
 
-def predefine_prompt(prompt):
-    st.session_state.initial_prompt.append(prompt)
+
+prompt_content = {
+    "5W1H": 'Summarize the content details in the "5W1H" approach (Who, What, When, Where, Why, and How) in bullet points',
+    "Similar Viewpoints": "Compare between the articles and provide the similar viewpoints in bullet points",
+    "Discrepency Viewpoints": "Compare between the articles and provide the discrepency viewpoints in bullet points"
+}
+
+def predefine_prompt():
+    st.session_state.initial_prompt.append(prompt_content[st.session_state.prompt_selection])
 
 
 def chat_template():
@@ -202,24 +209,38 @@ def chat_template():
 
                 print(st.session_state.reading_time)
     predefine_prompt_row = row(
-        [0.05, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.05],
+        [0.05, 0.15, 0.15, 0.3, 0.15, 0.15, 0.05],
         vertical_align="center",
         gap="medium",
     )
     if len(reference) > 1:
         for _ in range(3):
             predefine_prompt_row.write("")
-        predefine_prompt_row.button(
-            "Similar Viewpoints",
-            on_click=predefine_prompt,
-            kwargs={
-                "prompt": "Compare between the articles and provide the similar viewpoints in bullet points"
-            },
-        )
-        predefine_prompt_row.button(
-            "Discrepency Viewpoints",
-            on_click=predefine_prompt,
-            kwargs={
-                "prompt": "Compare between the articles and provide the discrepency viewpoints in bullet points"
-            },
-        )
+
+        predefine_prompt_row.selectbox('Predefined Prompt', 
+                    options=["", "5W1H", "Similar Viewpoints", "Discrepency Viewpoints"], 
+                    index=0,
+                    key="prompt_selection",
+                    on_change=predefine_prompt)
+            
+        # predefine_prompt_row.button(
+        #     "5W1H",
+        #     on_click=predefine_prompt,
+        #     kwargs={
+        #         "prompt": 'Summarize the content details in the "5W1H" approach (Who, What, When, Where, Why, and How) in bullet points'
+        #     },
+        # )
+        # predefine_prompt_row.button(
+        #     "Similar Viewpoints",
+        #     on_click=predefine_prompt,
+        #     kwargs={
+        #         "prompt": "Compare between the articles and provide the similar viewpoints in bullet points"
+        #     },
+        # )
+        # predefine_prompt_row.button(
+        #     "Discrepency Viewpoints",
+        #     on_click=predefine_prompt,
+        #     kwargs={
+        #         "prompt": "Compare between the articles and provide the discrepency viewpoints in bullet points"
+        #     },
+        # )
