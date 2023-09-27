@@ -176,7 +176,7 @@ def recommendation(key, positive, daterange, limit, thresh, negative=[], search_
         )
     else:
         params = {
-                    "categories": key.lower(),
+                    "categories": key,
                     "dr": int(daterange),
                     "l": limit,
                 }
@@ -205,14 +205,14 @@ def fetch_feeds(total_articles=12, data_range=14, thresh=0.1, mode="feed", searc
         numAct, numPos, numNeg = len(activities), len(positive), len(negative)
         
         if numAct < 10:
-            states = st.session_state["user_favorite"]
+            states.append(st.session_state["user_favorite"])
         else:
             if numAct:
                 states += ["activities"]
             # if numPos:
             #     states += ["positive"]
     elif mode in NEWS_CATEGORIES:
-        states.append(mode.lower())
+        states.append([mode.lower()])
     elif mode.lower() == "search":
         states.append(mode.lower())
     else:
