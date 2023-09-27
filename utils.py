@@ -176,7 +176,7 @@ def recommendation(key, positive, daterange, limit, thresh, negative=[], search_
         )
     else:
         params = {
-                    "c": key.lower(),
+                    "categories": key.lower(),
                     "dr": int(daterange),
                     "l": limit,
                 }
