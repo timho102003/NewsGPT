@@ -25,6 +25,13 @@ def hash_text(text: str):
     hash_object = hashlib.sha256(text.encode())
     return hash_object.hexdigest()
 
+def clear_cache():
+    keys = list(st.session_state.keys())
+    for key in keys:
+        st.session_state.pop(key)
+    fetch_feeds.clear()
+    load_activities.clear()
+
 def redirect_button(url: str, text: str = None, color="#FD504D"):
     st.markdown(
         f"""
@@ -132,6 +139,7 @@ def password_entered(username="", password="", guest=False):
         st.session_state["is_auth_user"] = False
 
 def signout():
+    clear_cache()
     st.session_state["is_guest"] = False
     st.session_state["is_auth_user"] = False
     st.session_state["password_correct"] = False
