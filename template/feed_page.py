@@ -11,7 +11,7 @@ def feed_template():
         unsafe_allow_html=True,
     )
     _, search_col, _ = st.columns([0.25, 0.5, 0.25])
-    selections = ["Feed"] + NEWS_CATEGORIES
+    selections = ["Feed"] + NEWS_CATEGORIES if not st.session_state.is_guest else NEWS_CATEGORIES
     with search_col:
         with st.form("Search Form", clear_on_submit=True):
             search_row = row(spec=[0.8, 0.2], vertical_align="bottom", gap="medium")
@@ -32,8 +32,8 @@ def feed_template():
         )
         st.session_state.cat_selection = st.selectbox('Choose the news categories', 
                               options=selections, 
-                              index=selections.index(st.session_state.get("cat_selection", "Feed")) \
-                                if st.session_state.get("cat_selection", "Feed") != "search" else 0)
+                              index=selections.index(st.session_state.get("cat_selection", "Feed" if not st.session_state.is_guest else "World")) \
+                                if st.session_state.get("cat_selection", "Feed" if not st.session_state.is_guest else "World") != "search" else 0)
                 # st.write(f'Selected option: {st.session_state.cat_selection}')
 
     if search_submit:

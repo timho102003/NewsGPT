@@ -27,7 +27,7 @@ with st.sidebar:
         time.sleep(1)
         switch_page("home")
     st.divider()
-    if st.session_state.get("is_auth_user", False):
+    if st.session_state.get("is_auth_user", False) and not st.session_state.get("is_guest", False):
         user_meta = st.session_state["user_ref"].get()
         user_meta = user_meta.to_dict()
         tot_readtime = 0

@@ -1,4 +1,5 @@
 import hashlib
+import uuid
 import json
 import os
 import random
@@ -59,16 +60,16 @@ def check_is_sign_up(username=""):
     else:
         return False
 
-def sign_up(username, password, lastname, firstname, favorite):
+def sign_up(username, password, lastname, firstname, favorite, collection="authentication"):
     signup_info = ""
     is_signup = False
     try:
         doc_ref = (
             st.session_state["firestore_db"]
-            .collection("authentication")
+            .collection(collection)
             .document(username)
         )
-        id = hash_text(username)
+        id = hash_text(username) if collection == "authentication" else username
         signup_info = {
             "username": username,
             "password": password,
@@ -87,8 +88,27 @@ def sign_up(username, password, lastname, firstname, favorite):
 
     return is_signup, signup_info
 
-def password_entered(username="", password=""):
+def password_entered(username="", password="", guest=False):
     """Checks whether a password entered by the user is correct."""
+
+    st.session_state["is_guest"] = False
+    if guest:
+        st.session_state["is_guest"] = True
+        st.session_state["password_correct"] = True
+        st.session_state["is_auth_user"] = True
+        st.session_state["username"] = "Guest"
+        st.session_state["realname"] = "Guest"
+        st.session_state["temporary_id"] = str(uuid.uuid4()).replace("-", "")
+        username = st.session_state["temporary_id"]
+        password = st.session_state["temporary_id"]
+        sign_up(username=username, 
+                password=password, 
+                lastname="Guest", 
+                firstname="Guest", favorite=[], collection="guest-authentication")
+        st.session_state["user_ref"] = (
+            st.session_state["firestore_db"].collection("guest-authentication").document(username)
+        )
+        return
 
     if not username or not password:
         st.session_state["password_correct"] = False
@@ -116,6 +136,7 @@ def password_entered(username="", password=""):
         st.session_state["is_auth_user"] = False
 
 def signout():
+    st.session_state["is_guest"] = False
     st.session_state["is_auth_user"] = False
     st.session_state["password_correct"] = False
     st.session_state["username"] = ""

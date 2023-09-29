@@ -55,6 +55,13 @@ def login_template():
         if issignup:
             st.session_state["page_name"] = "signup"
             switch_page("home")
+        guest_login = st.button("Guest Login", type="secondary", use_container_width=True)
+        if guest_login:
+            password_entered(username="", password="", guest=True)
+            st.warning("Personlization and time saving monitor will be disabled with guest login")
+            sleep(2)
+            st.session_state["page_name"] = "feed"
+            switch_page("home")
 
 
 def signup_template():
