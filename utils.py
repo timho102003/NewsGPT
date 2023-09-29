@@ -12,11 +12,7 @@ import requests
 import streamlit as st
 from annotated_text import annotated_text, annotation
 from google.cloud.firestore import ArrayUnion
-from llama_index import Document, ServiceContext, get_response_synthesizer
-from llama_index.indices.document_summary import (
-    DocumentSummaryIndex,
-    DocumentSummaryIndexRetriever,
-)
+from llama_index import Document, ServiceContext, VectorStoreIndex
 from llama_index.llms import OpenAI
 from llama_index.query_engine import RetrieverQueryEngine
 from streamlit_extras.customize_running import center_running
@@ -347,7 +343,7 @@ def generate_feed_layout():
                     "payload": current_payload,
                     "query_embed": current_embedding,
                     "ori_article_id": st.session_state["recommend"][i]["id"],
-                    "compare_num": 3,
+                    "compare_num": 5,
                 },
             )
 
@@ -711,38 +707,25 @@ def run_chat(payload, query_embed, ori_article_id, compare_num=5):
             documents.append(Document(text=cur_doc))
 
     start = time.time()
+    # from llama_index.callbacks import CallbackManager, LlamaDebugHandler
+    # llama_debug = LlamaDebugHandler(print_trace_on_end=True)
+    # callback_manager = CallbackManager([llama_debug])
     if "service_context" not in st.session_state:
         st.session_state["service_context"] = ServiceContext.from_defaults(
             llm=OpenAI(
                 model="gpt-3.5-turbo",
                 temperature=0.2,
                 chunk_size=1024,
-                chunk_overlap=200,
+                chunk_overlap=100,
                 system_prompt="As an expert current affairs commentator and analyst,\
-                                                                          your task is to answer the questions from the user related to the news articles",
-            )
+                                                                          your task is to summarize the articles and answer the questions from the user related to the news articles",
+            ),
+            # callback_manager=callback_manager
         )
-    if "summary_idx_response_synthesizer" not in st.session_state:
-        st.session_state["summary_idx_response_synthesizer"] = get_response_synthesizer(
-            response_mode="tree_summarize", use_async=True
-        )
+    st.session_state["chat_engine"] = VectorStoreIndex.from_documents(
+                    documents, use_async=True, service_context=st.session_state.service_context
+                ).as_query_engine()
     
-    doc_summary_index = DocumentSummaryIndex.from_documents(
-        documents=documents,
-        service_context=st.session_state["service_context"],
-        response_synthesizer=st.session_state["summary_idx_response_synthesizer"],
-    )
-    retriever = DocumentSummaryIndexRetriever(doc_summary_index)
-    # configure response synthesizer
-    if "response_synthesizer" not in st.session_state:
-        st.session_state["response_synthesizer"] = get_response_synthesizer()
-
-    # assemble query engine
-    st.session_state["chat_engine"] = RetrieverQueryEngine(
-        retriever=retriever,
-        response_synthesizer=st.session_state["response_synthesizer"],
-
-    )
     # print("Prepare summary index: {}".format(time.time()-start))
 
     # st.session_state["cur_news_index"] = VectorStoreIndex.from_documents(documents, service_context=st.session_state["service_context"])
