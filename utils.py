@@ -190,7 +190,8 @@ def recommendation(key, positive, daterange, limit, thresh, negative=[], search_
         params = {"q": search_msg, "l": limit, "t": thresh, "dr": daterange}
 
         data = {
-            "e": [],
+            "embedding": {"e": []},
+            "with_vectors": True
         }
         # Convert to JSON
         data = json.dumps(data)
@@ -675,8 +676,8 @@ def run_chat(payload, query_embed, ori_article_id, compare_num=5):
     params = {"q": "", "l": compare_num, "t": 0.5}
 
     data = {
-        "e": query_embed,
-    }
+        "embedding": {"e": query_embed},
+    }    
 
     # Convert to JSON
     data = json.dumps(data)
@@ -690,7 +691,7 @@ def run_chat(payload, query_embed, ori_article_id, compare_num=5):
     # print("retrieve data from qdrant (in run chat): {}".format(time.time()-start))
     if response.status_code != 200:
         st.session_state["page_name"] = "feed"
-        st.session_state["error"] = f"run_summary, qdrant search error: {response.text}"
+        st.session_state["error"] = f"run_chat, qdrant search error: {response.text}"
         return
     recommendation = response.json()
     documents, reference, rt, ner_p, ner_l, ner_o = [], [], [], set(), set(), set()
