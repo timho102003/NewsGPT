@@ -205,7 +205,7 @@ def recommendation(key, positive, daterange, limit, thresh, negative=[], search_
                     "dr": int(daterange),
                     "l": limit,
                 }
-        response = requests.get(
+        response = requests.post(
                         f"{os.environ['QDRANT_LAMBDA_ENTRYPOINT']}/api/v1/scroll",
                         params=params,
                     )
