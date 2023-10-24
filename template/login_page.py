@@ -62,7 +62,10 @@ def login_template():
             sleep(2)
             st.session_state["page_name"] = "feed"
             switch_page("home")
-
+        
+        st.image("assets/neotice_logo.png")
+        st.success("🎉🎊📣 Happy to to announce that the beta version of our NewsGPT - **Neotice** app is now available for users to try out!")
+        st.link_button("👉 Check out the app: Neotice !!", url="https://www.neotice.app")
 
 def signup_template():
     st.markdown(
