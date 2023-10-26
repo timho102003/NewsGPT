@@ -1,7 +1,9 @@
+import time
 import readtime
 import streamlit as st
 from streamlit_extras.row import row
 from streamlit_extras.switch_page_button import switch_page
+from streamlit_extras.streaming_write import write
 
 from utils import (
     generate_anno_text,
@@ -191,23 +193,33 @@ def chat_template():
         with st.chat_message(
             "assistant",
         ):
+            # start = time.time()
             with st.spinner("Thinking..."):
                 # response = st.session_state["chat_engine"].chat(prompt)
                 try:
                     response = st.session_state["chat_engine"].query(prompt)
-                    response = response.response
-                except:
-                    response = "Unable to retrieve the result due to some unexpected reason."
-                st.write(response)
-                message = {"role": "assistant", "content": response}
-                st.session_state.reading_time += readtime.of_text(
-                    response
-                ).seconds
-                st.session_state.messages.append(
-                    message
+                except Exception as e:
+                    response = f"Unable to retrieve the result due to some unexpected reason, {e}"
+                    print(response)
+                # st.write(response)
+            if not isinstance(response, str):
+                with st.spinner("Answering..."):
+                    buffer = ""
+                    def stream_example():
+                        nonlocal buffer
+                        for word in response.response_gen:
+                            buffer += word
+                            yield word
+                    write(stream_example)
+                response = buffer
+            message = {"role": "assistant", "content": response}
+            st.session_state.reading_time += readtime.of_text(
+                response
+            ).seconds
+            st.session_state.messages.append(
+                message
                 )  # Add response to message history
-
-                print(st.session_state.reading_time)
+            # print(f"think time: {time.time() - start}")
     predefine_prompt_row = row(
         [0.05, 0.15, 0.15, 0.3, 0.15, 0.15, 0.05],
         vertical_align="center",

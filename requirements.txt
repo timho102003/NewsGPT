@@ -1,5 +1,5 @@
 firebase_admin==6.2.0
-llama_index==0.8.16
+llama_index==0.8.51
 pandas==2.0.3
 protobuf==4.24.3
 readtime==3.0.0

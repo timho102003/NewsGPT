@@ -11,7 +11,7 @@ from template.chat_page import chat_template
 from template.feed_page import feed_template
 from template.login_page import login_template, signup_template
 from template.summary_page import summary_template
-from utils import load_activities, second_to_text, signout
+from utils import load_activities, second_to_text, signout, load_local_embedding_model
 
 st.set_page_config(page_title="", page_icon="👋", layout="wide")
 
@@ -71,6 +71,7 @@ with st.sidebar:
 key_dict = json.loads(st.secrets["textkey"])
 creds = service_account.Credentials.from_service_account_info(key_dict)
 st.session_state["firestore_db"] = firestore.Client(credentials=creds)
+load_local_embedding_model()
 # st.session_state["firestore_db"] = firestore.Client.from_service_account_json("assets/newsgpt_firebase_serviceAccount.json")
 
 if st.session_state.get("error", None):

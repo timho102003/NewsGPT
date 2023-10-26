@@ -18,8 +18,38 @@ from llama_index.query_engine import RetrieverQueryEngine
 from streamlit_extras.customize_running import center_running
 from streamlit_extras.row import row
 from streamlit_extras.switch_page_button import switch_page
-
+from llama_index.text_splitter import TokenTextSplitter
+from llama_index.node_parser import SimpleNodeParser
 from config import NEWS_CATEGORIES
+
+@st.cache_resource
+def load_local_embedding_model():
+    # print("start load_local_embedding_model")
+    # from llama_index.embeddings import TextEmbeddingsInference
+
+    # st.session_state["local_embed_model"] = TextEmbeddingsInference(
+    #     model_name="BAAI/bge-large-en-v1.5",
+    #     base_url = "http://127.0.0.1:5007",
+    #     timeout=60,  # timeout in seconds
+    #     embed_batch_size=10,  # batch size for embedding
+    # )
+    # print(st.session_state["local_embed_model"])
+    if "service_context" not in st.session_state:
+        st.session_state["service_context"] = ServiceContext.from_defaults(
+            llm=OpenAI(
+                model="gpt-3.5-turbo",
+                temperature=0.2,
+                chunk_size=1024,
+                chunk_overlap=100,
+                system_prompt="As an expert current affairs commentator and analyst,\
+                                                                          your task is to summarize the articles and answer the questions from the user related to the news articles",
+            ),
+            # callback_manager=callback_manager
+            # embed_model=st.session_state["local_embed_model"], 
+            chunk_size=256, 
+            chunk_overlap=20
+        )
+    # print("finish load_local_embedding_model")
 
 def hash_text(text: str):
     hash_object = hashlib.sha256(text.encode())
@@ -661,6 +691,11 @@ def summary_layout_template(
 
 #TODO: Enhance the performance of retriever. Current retriever sometimes can't get the answer correctly (Change to other retriever)
 def run_chat(payload, query_embed, ori_article_id, compare_num=5):
+
+    if "service_context" not in st.session_state:# "local_embed_model" not in st.session_state:
+        load_local_embedding_model.clear()
+        load_local_embedding_model()
+
     st.session_state.messages = [
         {"role": "assistant", "content": f"Ask me a question about {payload['title']}"}
     ]
@@ -719,21 +754,36 @@ def run_chat(payload, query_embed, ori_article_id, compare_num=5):
     # from llama_index.callbacks import CallbackManager, LlamaDebugHandler
     # llama_debug = LlamaDebugHandler(print_trace_on_end=True)
     # callback_manager = CallbackManager([llama_debug])
-    if "service_context" not in st.session_state:
-        st.session_state["service_context"] = ServiceContext.from_defaults(
-            llm=OpenAI(
-                model="gpt-3.5-turbo",
-                temperature=0.2,
-                chunk_size=1024,
-                chunk_overlap=100,
-                system_prompt="As an expert current affairs commentator and analyst,\
-                                                                          your task is to summarize the articles and answer the questions from the user related to the news articles",
-            ),
-            # callback_manager=callback_manager
-        )
-    st.session_state["chat_engine"] = VectorStoreIndex.from_documents(
-                    documents, use_async=True, service_context=st.session_state.service_context
-                ).as_query_engine()
+    text_splitter = TokenTextSplitter(separator=" ", chunk_size=256, chunk_overlap=20)
+    #create node parser to parse nodes from document
+    node_parser = SimpleNodeParser(text_splitter=text_splitter)
+    
+    # if "service_context" not in st.session_state:
+    #     st.session_state["service_context"] = ServiceContext.from_defaults(
+    #         llm=OpenAI(
+    #             model="gpt-3.5-turbo",
+    #             temperature=0.2,
+    #             chunk_size=1024,
+    #             chunk_overlap=100,
+    #             system_prompt="As an expert current affairs commentator and analyst,\
+    #                                                                       your task is to summarize the articles and answer the questions from the user related to the news articles",
+    #         ),
+    #         # callback_manager=callback_manager
+    #         embed_model=st.session_state["local_embed_model"], 
+    #         chunk_size=256, 
+    #         chunk_overlap=20
+    #     )
+
+    nodes = node_parser.get_nodes_from_documents(documents)
+    print(f"loaded nodes with {len(nodes)} nodes")
+    index = VectorStoreIndex(
+        nodes=nodes,
+        service_context=st.session_state["service_context"]
+    )
+    st.session_state["chat_engine"] = index.as_query_engine(streaming=True)
+    # st.session_state["chat_engine"] = VectorStoreIndex.from_documents(
+    #                 documents, use_async=True, service_context=st.session_state.service_context
+    #             ).as_query_engine()
     
     # print("Prepare summary index: {}".format(time.time()-start))
 
