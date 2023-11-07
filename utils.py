@@ -745,9 +745,9 @@ def run_chat(payload, query_embed, ori_article_id, compare_num=5):
                 {"title": rec["payload"]["title"], "url": rec["payload"]["url"]}
             )
             rt.append(readtime.of_text(rec["payload"]["body"]).seconds)
-            ner_p.update(set(rec["payload"]["named_entities"].get("PER", [])))
-            ner_l.update(set(rec["payload"]["named_entities"].get("LOC", [])))
-            ner_o.update(set(rec["payload"]["named_entities"].get("ORG", [])))
+            ner_p.update(set(rec["payload"].get("named_entities", {}).get("PER", [])))
+            ner_l.update(set(rec["payload"].get("named_entities", {}).get("LOC", [])))
+            ner_o.update(set(rec["payload"].get("named_entities", {}).get("ORG", [])))
             documents.append(Document(text=cur_doc))
 
     start = time.time()
