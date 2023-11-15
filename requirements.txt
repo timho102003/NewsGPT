@@ -1,11 +1,11 @@
 firebase_admin==6.2.0
-llama_index==0.8.51
+llama_index==0.8.69.post2
 pandas==2.0.3
-protobuf==4.24.3
+protobuf==4.25.0
 readtime==3.0.0
 Requests==2.31.0
 st_annotated_text==4.0.0
 streamlit==1.27.2
-streamlit_extras==0.3.1
+streamlit_extras==0.3.5
 toml==0.10.2
 nltk==3.8.1
